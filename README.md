@@ -1,6 +1,6 @@
 # 🛡️ AI Security Coach
 
-A self-hosted daily lesson app to prepare for AI Security Principal Engineer interviews — specifically targeting the MYOB role.
+A self-hosted daily lesson app to prepare for AI Security
 
 **15–20 minute lessons** covering AI/ML security, cloud security (Azure/AWS/GCP), threat modelling, security frameworks, red teaming, and leadership.
 
