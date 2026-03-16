@@ -1,7 +1,7 @@
 {
   "name": "ai-security-coach",
   "version": "1.0.0",
-  "description": "AI Security interview prep coach for MYOB Principal Engineer role",
+  "description": "AI Security interview prep coach for role",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
