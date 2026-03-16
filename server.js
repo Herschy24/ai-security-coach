@@ -1,12 +1,14 @@
 const express = require('express');
 const path = require('path');
 const CURRICULUM = require('./lessons/curriculum');
+const store = require('./store');
 
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// API: Get all lessons (metadata only)
+// ── Lessons ──────────────────────────────────────────────────────────────────
+
 app.get('/api/lessons', (req, res) => {
   const meta = CURRICULUM.map(({ id, week, day, title, topic, tags, summary }) => ({
     id, week, day, title, topic, tags, summary
@@ -14,17 +16,35 @@ app.get('/api/lessons', (req, res) => {
   res.json(meta);
 });
 
-// API: Get a single lesson
 app.get('/api/lessons/:id', (req, res) => {
   const lesson = CURRICULUM.find(l => l.id === parseInt(req.params.id));
   if (!lesson) return res.status(404).json({ error: 'Lesson not found' });
   res.json(lesson);
 });
 
-// API: Chat with Claude about a lesson (proxy to Anthropic)
+// ── Conversation history ──────────────────────────────────────────────────────
+
+// GET  /api/history/:sessionId/:lessonId  → returns saved messages
+app.get('/api/history/:sessionId/:lessonId', (req, res) => {
+  const { sessionId, lessonId } = req.params;
+  if (!isValidId(sessionId)) return res.status(400).json({ error: 'Invalid session ID' });
+  const messages = store.getMessages(sessionId, parseInt(lessonId));
+  res.json({ messages });
+});
+
+// DELETE /api/history/:sessionId/:lessonId  → clear chat for this lesson
+app.delete('/api/history/:sessionId/:lessonId', (req, res) => {
+  const { sessionId, lessonId } = req.params;
+  if (!isValidId(sessionId)) return res.status(400).json({ error: 'Invalid session ID' });
+  store.clearMessages(sessionId, parseInt(lessonId));
+  res.json({ ok: true });
+});
+
+// ── Chat (proxies to Anthropic, auto-saves) ───────────────────────────────────
+
 app.post('/api/chat', async (req, res) => {
-  const { messages, lessonContext } = req.body;
-  
+  const { messages, lessonContext, sessionId, lessonId } = req.body;
+
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return res.status(500).json({ error: 'ANTHROPIC_API_KEY not set in environment' });
@@ -67,11 +87,29 @@ Format your responses with clear structure. Use markdown for code blocks or list
     }
 
     const data = await response.json();
-    res.json({ content: data.content[0].text });
+    const reply = data.content[0].text;
+
+    // Persist conversation if a valid session is provided
+    if (sessionId && isValidId(sessionId) && lessonId) {
+      const lastUser = messages[messages.length - 1];
+      if (lastUser && lastUser.role === 'user') {
+        store.appendMessage(sessionId, parseInt(lessonId), 'user', lastUser.content);
+      }
+      store.appendMessage(sessionId, parseInt(lessonId), 'assistant', reply);
+    }
+
+    res.json({ content: reply });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+// Only allow alphanumeric + hyphens, max 64 chars
+function isValidId(id) {
+  return typeof id === 'string' && /^[a-zA-Z0-9-]{1,64}$/.test(id);
+}
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
