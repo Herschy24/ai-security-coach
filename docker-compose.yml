@@ -7,8 +7,9 @@ services:
     # image: ghcr.io/YOUR_GITHUB_USERNAME/ai-security-coach:latest
     ports:
       - "3000:3000"
+    env_file:
+      - .env
     environment:
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
       - PORT=3000
     restart: unless-stopped
     healthcheck:
