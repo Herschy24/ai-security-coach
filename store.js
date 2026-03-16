@@ -1,6 +1,6 @@
 /**
  * Simple file-based conversation store.
- * Persists session chat histories to /app/data/conversations.json
+ * Persists chat histories to /app/data/conversations.json, keyed by lessonId.
  */
 const fs = require('fs');
 const path = require('path');
@@ -29,29 +29,24 @@ function write(data) {
   fs.writeFileSync(FILE, JSON.stringify(data, null, 2), 'utf8');
 }
 
-function key(sessionId, lessonId) {
-  return `${sessionId}:${lessonId}`;
+/** Get messages for a lesson */
+function getMessages(lessonId) {
+  const data = read();
+  return data[lessonId] || [];
 }
 
-/** Get messages for a session + lesson */
-function getMessages(sessionId, lessonId) {
+/** Append a message to a lesson */
+function appendMessage(lessonId, role, content) {
   const data = read();
-  return data[key(sessionId, lessonId)] || [];
-}
-
-/** Append a message to a session + lesson */
-function appendMessage(sessionId, lessonId, role, content) {
-  const data = read();
-  const k = key(sessionId, lessonId);
-  if (!data[k]) data[k] = [];
-  data[k].push({ role, content, ts: Date.now() });
+  if (!data[lessonId]) data[lessonId] = [];
+  data[lessonId].push({ role, content, ts: Date.now() });
   write(data);
 }
 
-/** Delete all messages for a session + lesson */
-function clearMessages(sessionId, lessonId) {
+/** Delete all messages for a lesson */
+function clearMessages(lessonId) {
   const data = read();
-  delete data[key(sessionId, lessonId)];
+  delete data[lessonId];
   write(data);
 }
 

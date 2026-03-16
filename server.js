@@ -24,26 +24,22 @@ app.get('/api/lessons/:id', (req, res) => {
 
 // ── Conversation history ──────────────────────────────────────────────────────
 
-// GET  /api/history/:sessionId/:lessonId  → returns saved messages
-app.get('/api/history/:sessionId/:lessonId', (req, res) => {
-  const { sessionId, lessonId } = req.params;
-  if (!isValidId(sessionId)) return res.status(400).json({ error: 'Invalid session ID' });
-  const messages = store.getMessages(sessionId, parseInt(lessonId));
+// GET  /api/history/:lessonId  → returns saved messages
+app.get('/api/history/:lessonId', (req, res) => {
+  const messages = store.getMessages(parseInt(req.params.lessonId));
   res.json({ messages });
 });
 
-// DELETE /api/history/:sessionId/:lessonId  → clear chat for this lesson
-app.delete('/api/history/:sessionId/:lessonId', (req, res) => {
-  const { sessionId, lessonId } = req.params;
-  if (!isValidId(sessionId)) return res.status(400).json({ error: 'Invalid session ID' });
-  store.clearMessages(sessionId, parseInt(lessonId));
+// DELETE /api/history/:lessonId  → clear chat for this lesson
+app.delete('/api/history/:lessonId', (req, res) => {
+  store.clearMessages(parseInt(req.params.lessonId));
   res.json({ ok: true });
 });
 
 // ── Chat (proxies to Anthropic, auto-saves) ───────────────────────────────────
 
 app.post('/api/chat', async (req, res) => {
-  const { messages, lessonContext, sessionId, lessonId } = req.body;
+  const { messages, lessonContext, lessonId } = req.body;
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -89,13 +85,13 @@ Format your responses with clear structure. Use markdown for code blocks or list
     const data = await response.json();
     const reply = data.content[0].text;
 
-    // Persist conversation if a valid session is provided
-    if (sessionId && isValidId(sessionId) && lessonId) {
+    // Persist conversation
+    if (lessonId) {
       const lastUser = messages[messages.length - 1];
       if (lastUser && lastUser.role === 'user') {
-        store.appendMessage(sessionId, parseInt(lessonId), 'user', lastUser.content);
+        store.appendMessage(parseInt(lessonId), 'user', lastUser.content);
       }
-      store.appendMessage(sessionId, parseInt(lessonId), 'assistant', reply);
+      store.appendMessage(parseInt(lessonId), 'assistant', reply);
     }
 
     res.json({ content: reply });
@@ -103,13 +99,6 @@ Format your responses with clear structure. Use markdown for code blocks or list
     res.status(500).json({ error: err.message });
   }
 });
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-// Only allow alphanumeric + hyphens, max 64 chars
-function isValidId(id) {
-  return typeof id === 'string' && /^[a-zA-Z0-9-]{1,64}$/.test(id);
-}
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => {
