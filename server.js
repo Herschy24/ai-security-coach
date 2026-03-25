@@ -71,7 +71,7 @@ Format your responses with clear structure. Use markdown for code blocks or list
       },
       body: JSON.stringify({
         model: 'claude-opus-4-6',
-        max_tokens: 1024,
+        max_tokens: 8192,
         system: systemPrompt,
         messages: messages
       })
