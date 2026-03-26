@@ -61,6 +61,10 @@ Your role:
 
 Format your responses with clear structure. Use markdown for code blocks or lists when helpful.`;
 
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -72,6 +76,7 @@ Format your responses with clear structure. Use markdown for code blocks or list
       body: JSON.stringify({
         model: 'claude-opus-4-6',
         max_tokens: 8192,
+        stream: true,
         system: systemPrompt,
         messages: messages
       })
@@ -79,24 +84,46 @@ Format your responses with clear structure. Use markdown for code blocks or list
 
     if (!response.ok) {
       const err = await response.text();
-      return res.status(response.status).json({ error: err });
+      res.write(`data: ${JSON.stringify({ error: err })}\n\n`);
+      return res.end();
     }
 
-    const data = await response.json();
-    const reply = data.content[0].text;
+    let fullText = '';
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
 
-    // Persist conversation
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value);
+      for (const line of chunk.split('\n')) {
+        if (!line.startsWith('data: ')) continue;
+        const json = line.slice(6);
+        if (json === '[DONE]') continue;
+        try {
+          const evt = JSON.parse(json);
+          if (evt.type === 'content_block_delta' && evt.delta?.text) {
+            fullText += evt.delta.text;
+            res.write(`data: ${JSON.stringify({ token: evt.delta.text })}\n\n`);
+          }
+        } catch {}
+      }
+    }
+
+    // Persist after stream completes
     if (lessonId) {
       const lastUser = messages[messages.length - 1];
       if (lastUser && lastUser.role === 'user') {
         store.appendMessage(parseInt(lessonId), 'user', lastUser.content);
       }
-      store.appendMessage(parseInt(lessonId), 'assistant', reply);
+      store.appendMessage(parseInt(lessonId), 'assistant', fullText);
     }
 
-    res.json({ content: reply });
+    res.write('data: [DONE]\n\n');
+    res.end();
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
+    res.end();
   }
 });
 

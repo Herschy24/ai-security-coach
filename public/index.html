@@ -1051,16 +1051,39 @@ async function sendMessage() {
       })
     });
 
-    const data = await res.json();
     removeTyping();
+    const msgEl = appendMessage('assistant', '');
+    const contentEl = msgEl.querySelector('.message-content');
 
-    if (data.error) {
-      appendMessage('assistant', `Error: ${data.error}`);
-    } else {
-      state.messages.push({ role: 'assistant', content: data.content });
-      appendMessage('assistant', data.content);
-      chatMessages.scrollTop = chatMessages.scrollHeight;
+    let fullText = '';
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
 
+    outer: while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value);
+      for (const line of chunk.split('\n')) {
+        if (!line.startsWith('data: ')) continue;
+        const json = line.slice(6);
+        if (json === '[DONE]') break outer;
+        try {
+          const evt = JSON.parse(json);
+          if (evt.error) {
+            contentEl.innerHTML = `Error: ${escapeHtml(evt.error)}`;
+            break outer;
+          }
+          if (evt.token) {
+            fullText += evt.token;
+            contentEl.innerHTML = renderMarkdown(fullText);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+          }
+        } catch {}
+      }
+    }
+
+    if (fullText) {
+      state.messages.push({ role: 'assistant', content: fullText });
       if (state.currentLesson) {
         const item = document.querySelector(`.lesson-item[data-id="${state.currentLesson.id}"]`);
         if (item) item.classList.add('has-history');
