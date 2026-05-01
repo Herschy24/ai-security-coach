@@ -21,6 +21,9 @@
     --w1: #00ff88;
     --w2: #4d9fff;
     --w3: #ff8c42;
+    --sb1: #f5d800;
+    --sb2: #ff4da6;
+    --sb3: #00d4ff;
     --font-mono: 'JetBrains Mono', monospace;
     --font-head: 'Syne', sans-serif;
   }
@@ -128,6 +131,26 @@
   #lesson-list::-webkit-scrollbar-track { background: transparent; }
   #lesson-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
+  /* ── MODULE HEADER ── */
+  .module-header {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    padding: 14px 16px 4px;
+    color: var(--text-dim);
+    border-top: 1px solid var(--border);
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .module-header:first-child { border-top: none; margin-top: 0; padding-top: 8px; }
+
+  .module-header[data-module="myob"] { color: var(--w1); }
+  .module-header[data-module="sportsbet"] { color: var(--sb1); }
+
   .week-group { margin-bottom: 4px; }
 
   .week-label {
@@ -149,9 +172,14 @@
     background: var(--border);
   }
 
-  .week-label[data-week="1"] { color: var(--w1); }
-  .week-label[data-week="2"] { color: var(--w2); }
-  .week-label[data-week="3"] { color: var(--w3); }
+  /* MYOB week colours */
+  .week-label[data-module="myob"][data-week="1"] { color: var(--w1); }
+  .week-label[data-module="myob"][data-week="2"] { color: var(--w2); }
+  .week-label[data-module="myob"][data-week="3"] { color: var(--w3); }
+  /* Sportsbet week colours */
+  .week-label[data-module="sportsbet"][data-week="1"] { color: var(--sb1); }
+  .week-label[data-module="sportsbet"][data-week="2"] { color: var(--sb2); }
+  .week-label[data-module="sportsbet"][data-week="3"] { color: var(--sb3); }
 
   .lesson-item {
     padding: 8px 16px;
@@ -169,6 +197,8 @@
     background: var(--bg3);
     border-left-color: var(--accent);
   }
+
+  .lesson-item[data-module="sportsbet"].active { border-left-color: var(--sb1); }
 
   .lesson-item-text { flex: 1; min-width: 0; }
 
@@ -195,6 +225,8 @@
     opacity: 0;
     transition: opacity 0.2s;
   }
+
+  .lesson-item[data-module="sportsbet"] .history-dot { background: var(--sb1); }
 
   .lesson-item.has-history .history-dot { opacity: 1; }
 
@@ -272,9 +304,15 @@
     letter-spacing: 0.5px;
   }
 
-  .badge-week { background: rgba(0,255,136,0.12); color: var(--accent); }
-  .badge-week[data-week="2"] { background: rgba(77,159,255,0.12); color: var(--w2); }
-  .badge-week[data-week="3"] { background: rgba(255,140,66,0.12); color: var(--w3); }
+  /* MYOB badge colours */
+  .badge-week[data-module="myob"] { background: rgba(0,255,136,0.12); color: var(--accent); }
+  .badge-week[data-module="myob"][data-week="2"] { background: rgba(77,159,255,0.12); color: var(--w2); }
+  .badge-week[data-module="myob"][data-week="3"] { background: rgba(255,140,66,0.12); color: var(--w3); }
+  /* Sportsbet badge colours */
+  .badge-week[data-module="sportsbet"][data-week="1"] { background: rgba(245,216,0,0.12); color: var(--sb1); }
+  .badge-week[data-module="sportsbet"][data-week="2"] { background: rgba(255,77,166,0.12); color: var(--sb2); }
+  .badge-week[data-module="sportsbet"][data-week="3"] { background: rgba(0,212,255,0.12); color: var(--sb3); }
+
   .badge-tag { background: var(--bg3); color: var(--text-dim); }
 
   .clear-history-btn {
@@ -593,10 +631,8 @@
 
   /* ── MOBILE ── */
   @media (max-width: 768px) {
-    /* Show the mobile top bar */
     #mobile-bar { display: flex; }
 
-    /* App fills height below the 48px bar */
     #app {
       grid-template-columns: 1fr;
       grid-template-rows: 1fr;
@@ -605,7 +641,6 @@
       height: 100dvh;
     }
 
-    /* Sidebar becomes a fixed left-drawer */
     #sidebar {
       position: fixed;
       top: 0;
@@ -621,35 +656,26 @@
 
     #sidebar.drawer-open { left: 0; }
 
-    /* Main fills all remaining space */
     #main { height: 100%; }
 
-    /* Lesson panel: compact, details collapsed by default */
     #lesson-panel { padding: 10px 14px 0; }
 
     #lesson-panel h1 { font-size: 16px; margin-bottom: 0; }
 
-    /* Show the details toggle button on mobile */
     #lesson-details-toggle { display: block; }
 
-    /* Lesson sections hidden on mobile until toggled */
     .lesson-sections { display: none; grid-template-columns: 1fr; }
     .lesson-sections.expanded { display: grid; }
 
-    /* Chat gets all the space */
     #chat-messages { padding: 10px 14px; gap: 10px; }
 
-    /* Messages fill the full width */
     .message { max-width: 100%; }
 
-    /* Slightly larger text in messages for readability */
     .message-content { font-size: 14px; line-height: 1.7; padding: 10px 12px; }
 
-    /* Compact input area */
     #chat-input-row { padding: 8px 12px 10px; }
-    #chat-input { font-size: 16px; /* prevents iOS zoom on focus */ }
+    #chat-input { font-size: 16px; }
 
-    /* Hide desktop-only hint */
     .input-hint { display: none; }
   }
 </style>
@@ -669,7 +695,7 @@
   <aside id="sidebar">
     <div class="sidebar-header">
       <div class="logo">AI Security Coach</div>
-      <div class="tagline">Principal AI Security Engineer prep</div>
+      <div class="tagline">Interview prep &amp; coaching</div>
     </div>
     <div id="lesson-list">
       <div class="sidebar-loading">Loading lessons...</div>
@@ -839,43 +865,66 @@ function escapeHtml(text) {
 
 // ── Sidebar ───────────────────────────────────────────────────────────────────
 
+const MODULE_NAMES = {
+  myob: 'MYOB — AI Security',
+  sportsbet: 'Sportsbet — Cloud Security'
+};
+const MODULE_ORDER = ['myob', 'sportsbet'];
+
 function renderSidebar(lessons) {
-  const byWeek = {};
+  // Group by module, then week
+  const modules = {};
   for (const l of lessons) {
-    if (!byWeek[l.week]) byWeek[l.week] = [];
-    byWeek[l.week].push(l);
+    const mod = l.module || 'myob';
+    if (!modules[mod]) modules[mod] = {};
+    if (!modules[mod][l.week]) modules[mod][l.week] = [];
+    modules[mod][l.week].push(l);
   }
 
   lessonList.innerHTML = '';
-  for (const week of Object.keys(byWeek).sort()) {
-    const group = document.createElement('div');
-    group.className = 'week-group';
+  let first = true;
+  for (const mod of MODULE_ORDER) {
+    if (!modules[mod]) continue;
 
-    const label = document.createElement('div');
-    label.className = 'week-label';
-    label.setAttribute('data-week', week);
-    label.textContent = `Week ${week}`;
-    group.appendChild(label);
+    const modHeader = document.createElement('div');
+    modHeader.className = 'module-header';
+    modHeader.setAttribute('data-module', mod);
+    modHeader.textContent = MODULE_NAMES[mod] || mod;
+    if (first) { first = false; }
+    lessonList.appendChild(modHeader);
 
-    for (const lesson of byWeek[week]) {
-      const item = document.createElement('div');
-      item.className = 'lesson-item';
-      item.dataset.id = lesson.id;
+    for (const week of Object.keys(modules[mod]).sort((a, b) => Number(a) - Number(b))) {
+      const group = document.createElement('div');
+      group.className = 'week-group';
 
-      const dot = document.createElement('div');
-      dot.className = 'history-dot';
+      const label = document.createElement('div');
+      label.className = 'week-label';
+      label.setAttribute('data-week', week);
+      label.setAttribute('data-module', mod);
+      label.textContent = `Week ${week}`;
+      group.appendChild(label);
 
-      const text = document.createElement('div');
-      text.className = 'lesson-item-text';
-      text.innerHTML = `<div class="day-tag">Day ${lesson.day}</div><div class="lesson-title">${lesson.title}</div>`;
+      for (const lesson of modules[mod][week]) {
+        const item = document.createElement('div');
+        item.className = 'lesson-item';
+        item.dataset.id = lesson.id;
+        item.setAttribute('data-module', mod);
 
-      item.appendChild(dot);
-      item.appendChild(text);
-      item.addEventListener('click', () => selectLesson(lesson.id));
-      group.appendChild(item);
+        const dot = document.createElement('div');
+        dot.className = 'history-dot';
+
+        const text = document.createElement('div');
+        text.className = 'lesson-item-text';
+        text.innerHTML = `<div class="day-tag">Day ${lesson.day}</div><div class="lesson-title">${lesson.title}</div>`;
+
+        item.appendChild(dot);
+        item.appendChild(text);
+        item.addEventListener('click', () => selectLesson(lesson.id));
+        group.appendChild(item);
+      }
+
+      lessonList.appendChild(group);
     }
-
-    lessonList.appendChild(group);
   }
 }
 
@@ -893,7 +942,6 @@ async function loadHistoryDots() {
 // ── Lesson selection ──────────────────────────────────────────────────────────
 
 async function selectLesson(id) {
-  // Close the mobile drawer
   closeDrawer();
 
   document.querySelectorAll('.lesson-item').forEach(el => {
@@ -911,12 +959,11 @@ async function selectLesson(id) {
 
   state.currentLesson = lesson;
 
-  // Update mobile bar
   mobileLessonName.textContent = lesson.title;
 
-  // Render lesson header
+  const mod = lesson.module || 'myob';
   lessonMeta.innerHTML = `
-    <span class="badge badge-week" data-week="${lesson.week}">Week ${lesson.week} · Day ${lesson.day}</span>
+    <span class="badge badge-week" data-week="${lesson.week}" data-module="${mod}">Week ${lesson.week} · Day ${lesson.day}</span>
     ${(lesson.tags || []).map(t => `<span class="badge badge-tag">${t}</span>`).join('')}
     <button class="clear-history-btn" id="clear-history-btn" title="Clear chat history for this lesson">clear chat</button>
   `;
@@ -926,7 +973,6 @@ async function selectLesson(id) {
   keyPointsList.innerHTML = (lesson.keyPoints || []).map(p => `<li>${p}</li>`).join('');
   interviewList.innerHTML = (lesson.interviewQuestions || []).map(q => `<li>${q}</li>`).join('');
 
-  // On mobile: collapse lesson details and reset toggle
   lessonSections.classList.remove('expanded');
   lessonDetailsToggle.innerHTML = '&#9662; lesson details';
 
